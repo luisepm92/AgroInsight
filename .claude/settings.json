@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv_agroinsight/bin/python -m ipykernel install --user --name=venv_agroinsight --display-name=\"AgroInsight \\(venv\\)\")"
+    ]
+  }
+}

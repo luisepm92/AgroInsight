@@ -1,0 +1,9 @@
+modelos/
+venv_agroinsight/
+mapas/
+graficas/
+__pycache__/
+*.pyc
+.DS_Store
+*.pkl
+*.keras
