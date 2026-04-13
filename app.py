@@ -53,8 +53,8 @@ def cargar_modelos():
             from tensorflow import keras
         except ImportError:
             import keras
-        m1_nn = keras.models.load_model(f'{RUTA_MODELOS}/m1_nn_model.keras')
-        m2_nn = keras.models.load_model(f'{RUTA_MODELOS}/m2_nn_model.keras')
+        m1_nn = keras.models.load_model(f'{RUTA_MODELOS}/m1_nn_model.h5')
+        m2_nn = keras.models.load_model(f'{RUTA_MODELOS}/m2_nn_model.h5')
     except Exception as e:
         tf_import_error = str(e)
         m1_nn = None
