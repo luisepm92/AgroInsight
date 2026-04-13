@@ -1,9 +1,6 @@
-modelos/
+modelos/m1_rf_opt.pkl
+modelos/m2_rf_opt.pkl
 venv_agroinsight/
-mapas/
-graficas/
 __pycache__/
 *.pyc
 .DS_Store
-*.pkl
-*.keras
