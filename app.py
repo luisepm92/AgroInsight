@@ -48,9 +48,13 @@ RUTA_MAPAS    = os.path.join(BASE_DIR, 'mapas')
 def cargar_modelos():
     tf_import_error = None
     try:
-        import tensorflow as tf
-        m1_nn = tf.keras.models.load_model(f'{RUTA_MODELOS}/m1_nn_model.keras')
-        m2_nn = tf.keras.models.load_model(f'{RUTA_MODELOS}/m2_nn_model.keras')
+        try:
+            import tensorflow as tf
+            from tensorflow import keras
+        except ImportError:
+            import keras
+        m1_nn = keras.models.load_model(f'{RUTA_MODELOS}/m1_nn_model.keras')
+        m2_nn = keras.models.load_model(f'{RUTA_MODELOS}/m2_nn_model.keras')
     except Exception as e:
         tf_import_error = str(e)
         m1_nn = None
