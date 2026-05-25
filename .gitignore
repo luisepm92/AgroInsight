@@ -2,6 +2,7 @@ modelos/m1_rf_opt.pkl
 modelos/m2_rf_opt.pkl
 modelos/m1_nn_model.keras
 modelos/m2_nn_model.keras
+# data_limpia.pkl — NECESARIO para Streamlit Cloud
 venv_agroinsight/
 __pycache__/
 *.pyc
