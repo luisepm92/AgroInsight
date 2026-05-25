@@ -46,37 +46,22 @@ RUTA_MAPAS    = os.path.join(BASE_DIR, 'mapas')
 # ─────────────────────────────────────────────────────────────
 @st.cache_resource
 def cargar_modelos():
-    tf_import_error = None
-    try:
-        try:
-            import tensorflow as tf
-            from tensorflow import keras
-        except ImportError:
-            import keras
-        m1_nn = keras.models.load_model(f'{RUTA_MODELOS}/m1_nn_model.h5')
-        m2_nn = keras.models.load_model(f'{RUTA_MODELOS}/m2_nn_model.h5')
-    except Exception as e:
-        tf_import_error = str(e)
-        m1_nn = None
-        m2_nn = None
-
     modelos = {
-        # NN M1 — predicción de producción
-        'm1_scaler_nn': joblib.load(f'{RUTA_MODELOS}/m1_scaler_num_nn.pkl'),
-        'm1_le_dep':    joblib.load(f'{RUTA_MODELOS}/m1_le_dep.pkl'),
-        'm1_le_grp':    joblib.load(f'{RUTA_MODELOS}/m1_le_grp.pkl'),
-        'm1_le_ciclo':  joblib.load(f'{RUTA_MODELOS}/m1_le_ciclo.pkl'),
+        # RF M1 — predicción de producción
+        'm1_rf':        joblib.load(f'{RUTA_MODELOS}/m1_rf_opt.pkl'),
+        'm1_scaler_rf': joblib.load(f'{RUTA_MODELOS}/m1_scaler_num_rf.pkl'),
+        'm1_ohe':       joblib.load(f'{RUTA_MODELOS}/m1_ohe_rf.pkl'),
         'm1_log_max':   joblib.load(f'{RUTA_MODELOS}/m1_log_max.pkl'),
         'm1_niveles':   joblib.load(f'{RUTA_MODELOS}/m1_niveles.pkl'),
-        'm1_nn':        m1_nn,
-        # NN M2 — clasificación alta/baja
-        'm2_scaler_nn': joblib.load(f'{RUTA_MODELOS}/m2_scaler_num_nn.pkl'),
-        'm2_le_dep':    joblib.load(f'{RUTA_MODELOS}/m2_le_dep.pkl'),
-        'm2_le_grp':    joblib.load(f'{RUTA_MODELOS}/m2_le_grp.pkl'),
-        'm2_le_ciclo':  joblib.load(f'{RUTA_MODELOS}/m2_le_ciclo.pkl'),
+        # RF M2 — clasificación alta/baja
+        'm2_rf':        joblib.load(f'{RUTA_MODELOS}/m2_rf_opt.pkl'),
+        'm2_scaler_rf': joblib.load(f'{RUTA_MODELOS}/m2_scaler_num_rf.pkl'),
+        'm2_ohe':       joblib.load(f'{RUTA_MODELOS}/m2_ohe_rf.pkl'),
         'm2_mediana':   joblib.load(f'{RUTA_MODELOS}/m2_mediana.pkl'),
-        'm2_nn':        m2_nn,
-        'tf_error':     tf_import_error,
+        # Datos
+        'tf_error':     None,
+        'm1_nn':        None,
+        'm2_nn':        None,
     }
     return modelos
 
@@ -573,28 +558,21 @@ elif seccion == '🤖 Demo Interactiva':
 
             col_m1, col_m2 = st.columns(2)
 
-            # ── M1: Predicción de producción con NN ─────────────
+            # ── M1: Predicción de producción con Random Forest ──────────────
             with col_m1:
                 st.markdown('### 📈 Predicción de producción')
                 try:
                     log_max = modelos['m1_log_max']
 
-                    # Preparar inputs NN M1
+                    # Preparar inputs RF M1
                     sem = 1 if str(ciclo_cultivo).upper() == 'TRANSITORIO' else 0
-                    X_num = modelos['m1_scaler_nn'].transform([[area_ha, sem]])
-                    X_dep = modelos['m1_le_dep'].transform([departamento]).reshape(-1, 1)
-                    X_grp = modelos['m1_le_grp'].transform([grupo_cultivo]).reshape(-1, 1)
-                    X_ciclo = modelos['m1_le_ciclo'].transform([ciclo_cultivo]).reshape(-1, 1)
+                    X_num = modelos['m1_scaler_rf'].transform([[area_ha, sem]])
+                    X_cat = modelos['m1_ohe'].transform([[departamento, grupo_cultivo, ciclo_cultivo]])
+                    X = np.hstack([X_num, X_cat])
 
                     # Predecir en escala log y convertir a toneladas
                     pred_log = float(np.clip(
-                        modelos['m1_nn'].predict(
-                            {'numericas': X_num,
-                             'departamento': X_dep,
-                             'grupo_cultivo': X_grp,
-                             'ciclo_cultivo': X_ciclo},
-                            verbose=0
-                        ).flatten()[0],
+                        modelos['m1_rf'].predict(X)[0],
                         0, log_max
                     ))
                     pred_ton = np.expm1(pred_log)
@@ -618,25 +596,18 @@ elif seccion == '🤖 Demo Interactiva':
                 except Exception as e:
                     st.error(f'Error en predicción: {e}')
 
-            # ── M2: ¿Vale la pena sembrar? con NN ───────────────
+            # ── M2: ¿Vale la pena sembrar? con Random Forest ────────────────
             with col_m2:
                 st.markdown('### 🎯 ¿Vale la pena sembrar?')
                 st.caption(f'Umbral: {mediana:.0f} t (mediana nacional 2006–2018)')
                 try:
                     sem = 1 if str(ciclo_cultivo).upper() == 'TRANSITORIO' else 0
-                    X_num = modelos['m2_scaler_nn'].transform([[area_ha, sem]])
-                    X_dep = modelos['m2_le_dep'].transform([departamento]).reshape(-1, 1)
-                    X_grp = modelos['m2_le_grp'].transform([grupo_cultivo]).reshape(-1, 1)
-                    X_ciclo = modelos['m2_le_ciclo'].transform([ciclo_cultivo]).reshape(-1, 1)
+                    X_num = modelos['m2_scaler_rf'].transform([[area_ha, sem]])
+                    X_cat = modelos['m2_ohe'].transform([[departamento, grupo_cultivo, ciclo_cultivo]])
+                    X = np.hstack([X_num, X_cat])
 
-                    prob = float(modelos['m2_nn'].predict(
-                        {'numericas': X_num,
-                         'departamento': X_dep,
-                         'grupo_cultivo': X_grp,
-                         'ciclo_cultivo': X_ciclo},
-                        verbose=0
-                    ).flatten()[0])
-                    pred = int(prob >= 0.5)
+                    prob = float(modelos['m2_rf'].predict_proba(X)[0][1])
+                    pred = int(modelos['m2_rf'].predict(X)[0])
 
                     if pred == 1:
                         st.success('✅ PRODUCCIÓN ALTA')
