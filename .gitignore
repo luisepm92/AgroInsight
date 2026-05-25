@@ -1,6 +1,11 @@
 modelos/m1_rf_opt.pkl
 modelos/m2_rf_opt.pkl
+modelos/m1_nn_model.keras
+modelos/m2_nn_model.keras
 venv_agroinsight/
 __pycache__/
 *.pyc
 .DS_Store
+backup.py
+app_local.py
+app_streamlit.py
